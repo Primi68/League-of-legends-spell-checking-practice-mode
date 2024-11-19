@@ -35,7 +35,7 @@
             left: 10px;
             width: 300px;
             max-height: 200px;
-            overflow: hidden;
+            overflow-y: auto;
             background-color: rgba(0, 0, 0, 0.5);
             color: white;
             padding: 10px;
@@ -81,11 +81,11 @@
 </head>
 <body>
     <div id="gameContainer">
-        <button id="startButton" onclick="startGame()">게임 시작하기</button>
-        <button id="generateSituationButton" class="controlButton" style="display:none;" onclick="generateNextSituation()">상황 발생</button>
-        <button id="resetButton" class="controlButton" style="display:none;" onclick="resetGame()">초기화</button>
-        <button id="pauseButton" class="controlButton" style="display:none;" onclick="pauseGame()">일시 정지</button>
-        <button id="resumeButton" class="controlButton" style="display:none;" onclick="resumeGame()">다시 시작</button>
+        <button id="startButton">게임 시작하기</button>
+        <button id="generateSituationButton" class="controlButton" style="display:none;">상황 발생</button>
+        <button id="resetButton" class="controlButton" style="display:none;">초기화</button>
+        <button id="pauseButton" class="controlButton" style="display:none;">일시 정지</button>
+        <button id="resumeButton" class="controlButton" style="display:none;">다시 시작</button>
         <input type="text" id="inputField" name="timestampInput">
         <div id="logContainer"></div>
     </div>
@@ -95,6 +95,7 @@
         let gameTime = 0;
         let gameTimerInterval;
         let situationInterval;
+        let lastSituation;
 
         const inputField = document.getElementById('inputField');
         const logContainer = document.getElementById('logContainer');
@@ -103,6 +104,23 @@
         const resetButton = document.getElementById('resetButton');
         const pauseButton = document.getElementById('pauseButton');
         const resumeButton = document.getElementById('resumeButton');
+
+        function addEventListeners() {
+            startButton.addEventListener('click', startGame);
+            generateSituationButton.addEventListener('click', generateNextSituation);
+            resetButton.addEventListener('click', resetGame);
+            pauseButton.addEventListener('click', pauseGame);
+            resumeButton.addEventListener('click', resumeGame);
+            inputField.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    handleUserInput(inputField.value);
+                    inputField.value = '';
+                }
+            });
+        }
+
+        // Adding event listeners on window load to ensure all elements are fully loaded
+        window.onload = addEventListeners;
 
         function startGame() {
             startButton.style.display = 'none';
@@ -167,35 +185,109 @@
             }, 1000);
         }
 
-        function generateSituation() {
-            const champions = ['다리우스', '리신', '아리', '이즈리얼', '룰루'];
-            const spells = ['Flash', 'Teleport'];
-            const spellCooldowns = { Flash: 300, Teleport: 360 };
+        function generateNextSituation() {
+            const champions = [
+                { name: '다리우스', hasCosmicInsight: true, hasIonianBoots: false },
+                { name: '리신', hasCosmicInsight: false, hasIonianBoots: true },
+                { name: '아리', hasCosmicInsight: true, hasIonianBoots: true },
+                { name: '이즈리얼', hasCosmicInsight: false, hasIonianBoots: false },
+                { name: '룰루', hasCosmicInsight: false, hasIonianBoots: true }
+            ];
+            const spells = ['Flash', 'Teleport', 'Cleanse', 'Ignite'];
+            const selectedSpell = spells[Math.floor(Math.random() * spells.length)];
+            const selectedChampion = champions[Math.floor(Math.random() * champions.length)];
 
-            const champion = champions[Math.floor(Math.random() * champions.length)];
-            const spell = spells[Math.floor(Math.random() * spells.length)];
+            let spellCooldown;
+            if (selectedSpell === 'Flash') {
+                if (selectedChampion.hasCosmicInsight && selectedChampion.hasIonianBoots) {
+                    spellCooldown = 235;
+                } else if (selectedChampion.hasCosmicInsight) {
+                    spellCooldown = 255;
+                } else if (selectedChampion.hasIonianBoots) {
+                    spellCooldown = 275;
+                } else {
+                    spellCooldown = 300;
+                }
+            } else if (selectedSpell === 'Teleport') {
+                if (gameTime >= 14 * 60) {
+                    if (selectedChampion.hasCosmicInsight && selectedChampion.hasIonianBoots) {
+                        spellCooldown = 260;
+                    } else if (selectedChampion.hasCosmicInsight) {
+                        spellCooldown = 280;
+                    } else if (selectedChampion.hasIonianBoots) {
+                        spellCooldown = 300;
+                    } else {
+                        spellCooldown = 330;
+                    }
+                } else {
+                    if (selectedChampion.hasCosmicInsight && selectedChampion.hasIonianBoots) {
+                        spellCooldown = 280;
+                    } else if (selectedChampion.hasCosmicInsight) {
+                        spellCooldown = 305;
+                    } else if (selectedChampion.hasIonianBoots) {
+                        spellCooldown = 330;
+                    } else {
+                        spellCooldown = 360;
+                    }
+                }
+            } else if (selectedSpell === 'Cleanse') {
+                if (selectedChampion.hasCosmicInsight && selectedChampion.hasIonianBoots) {
+                    spellCooldown = 190;
+                } else if (selectedChampion.hasCosmicInsight) {
+                    spellCooldown = 205;
+                } else if (selectedChampion.hasIonianBoots) {
+                    spellCooldown = 220;
+                } else {
+                    spellCooldown = 240;
+                }
+            } else if (selectedSpell === 'Ignite') {
+                if (selectedChampion.hasCosmicInsight && selectedChampion.hasIonianBoots) {
+                    spellCooldown = 140;
+                } else if (selectedChampion.hasCosmicInsight) {
+                    spellCooldown = 155;
+                } else if (selectedChampion.hasIonianBoots) {
+                    spellCooldown = 180;
+                } else {
+                    spellCooldown = 180;
+                }
+            }
+
             const currentTimestamp = getCurrentGameTime();
+            const cooldownEndTime = calculateCooldownEndTime(currentTimestamp, spellCooldown);
 
-            return {
-                champion: champion,
-                spell: spell,
-                cooldown: spellCooldowns[spell],
-                timestamp: currentTimestamp
+            lastSituation = {
+                champion: selectedChampion.name,
+                spell: selectedSpell,
+                cooldownEndTime: cooldownEndTime
             };
+
+            const situationText = `${currentTimestamp} ${selectedChampion.name} ${selectedSpell}`;
+            addLog(situationText, 'situation');
         }
 
-        function displaySituation(situation) {
-            const situationText = `${situation.timestamp} ${situation.champion}가 ${situation.spell}을(를) 사용했습니다.`;
-            const newLogEntry = document.createElement('div');
-            newLogEntry.textContent = situationText;
-            newLogEntry.style.color = 'blue';
-            logContainer.appendChild(newLogEntry);
-            
-            logContainer.scrollTop = logContainer.scrollHeight;
+        function calculateCooldownEndTime(currentTime, cooldown) {
+            const [minutes, seconds] = currentTime.split(':').map(Number);
+            let totalSeconds = minutes * 60 + seconds + cooldown;
+            totalSeconds = Math.round(totalSeconds / 5) * 5; // 5초 단위로 반올림
 
-            if (logContainer.childElementCount > 7) {
-                logContainer.removeChild(logContainer.firstChild);
+            const endMinutes = Math.floor(totalSeconds / 60);
+            const endSeconds = totalSeconds % 60;
+            return `${endMinutes}:${endSeconds < 10 ? '0' : ''}${endSeconds}`;
+        }
+
+        function addLog(text, type) {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = text;
+            if (type === 'situation') {
+                logEntry.style.color = 'blue';
             }
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function handleUserInput(userInput) {
+            if (!lastSituation) return;
+            addLog(userInput, 'input');
         }
 
         function getCurrentGameTime() {
@@ -203,29 +295,6 @@
             const seconds = gameTime % 60;
             return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
         }
-        
-        function generateNextSituation() {
-            const situation = generateSituation();
-            displaySituation(situation);
-        }
-
-        inputField.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                const playerInput = inputField.value;
-                if (playerInput.trim() !== '') {
-                    const newLogEntry = document.createElement('div');
-                    newLogEntry.textContent = playerInput;
-                    logContainer.appendChild(newLogEntry);
-                    logContainer.scrollTop = logContainer.scrollHeight;
-
-                    if (logContainer.childElementCount > 7) {
-                        logContainer.removeChild(logContainer.firstChild);
-                    }
-                }
-                inputField.value = '';
-                inputField.focus();
-            }
-        });
     </script>
 </body>
 </html>
