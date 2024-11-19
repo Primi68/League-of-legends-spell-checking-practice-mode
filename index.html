@@ -28,13 +28,56 @@
             font-size: 18px;
             text-align: center;
             z-index: 10; /* 게임 캔버스 위에 위치하도록 함 */
+            display: none; /* 게임 시작 전에는 숨김 */
+        }
+
+        #logContainer {
+            position: absolute;
+            bottom: 100px;
+            left: 10px;
+            width: 250px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            font-size: 14px;
+            z-index: 10;
+            display: none; /* 게임 시작 전에는 숨김 */
+        }
+
+        #startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 20;
+        }
+
+        .controlButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            margin-left: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 20;
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <!-- HTML 입력 필드를 직접 작성하여 Phaser 캔버스 위에 배치 -->
+        <button id="startButton">게임 시작하기</button>
         <input type="text" id="inputField" name="timestampInput">
+        <div id="logContainer"></div>
+        <!-- 오른쪽 위에 위치한 조작 버튼들 -->
+        <button id="resetButton" class="controlButton" style="display:none;">초기화</button>
+        <button id="pauseButton" class="controlButton" style="display:none;">일시 정지</button>
+        <button id="resumeButton" class="controlButton" style="display:none;">다시 시작</button>
     </div>
     <script>
         const config = {
@@ -53,9 +96,64 @@
 
         let score = 0;
         let currentTime = 0;
+        let gameStarted = false;
+        let gamePaused = false;
         let currentSituation = null;
-        let promptText, scoreText, timeText;
+        let promptText, scoreText, timeText, situationText;
         const inputField = document.getElementById('inputField');
+        const logContainer = document.getElementById('logContainer');
+        const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const resumeButton = document.getElementById('resumeButton');
+
+        startButton.addEventListener('click', startGame);
+        resetButton.addEventListener('click', resetGame);
+        pauseButton.addEventListener('click', pauseGame);
+        resumeButton.addEventListener('click', resumeGame);
+
+        function startGame() {
+            startButton.style.display = 'none';
+            inputField.style.display = 'block';
+            logContainer.style.display = 'block';
+            resetButton.style.display = 'block';
+            pauseButton.style.display = 'block';
+            gameStarted = true;
+            gamePaused = false;
+            generateNextSituation();
+        }
+
+        function resetGame() {
+            // 게임 상태 초기화
+            gameStarted = false;
+            gamePaused = false;
+            currentTime = 0;
+            score = 0;
+            scoreText.setText('Score: 0');
+            timeText.setText('Time: 0:00');
+            situationText.setText('');
+            logContainer.innerHTML = '';
+
+            // 버튼들 초기화
+            inputField.style.display = 'none';
+            logContainer.style.display = 'none';
+            resetButton.style.display = 'none';
+            pauseButton.style.display = 'none';
+            resumeButton.style.display = 'none';
+            startButton.style.display = 'block';
+        }
+
+        function pauseGame() {
+            gamePaused = true;
+            pauseButton.style.display = 'none';
+            resumeButton.style.display = 'block';
+        }
+
+        function resumeGame() {
+            gamePaused = false;
+            pauseButton.style.display = 'block';
+            resumeButton.style.display = 'none';
+        }
 
         function preload() {
             // 필요한 이미지나 리소스 로드 가능
@@ -68,19 +166,17 @@
             // 점수 표시
             scoreText = this.add.text(10, 10, 'Score: 0', { font: '20px Arial', fill: '#ffffff' });
 
-            // 상황 텍스트
-            promptText = this.add.text(10, 50, '', { font: '20px Arial', fill: '#ffffff' });
+            // 중앙 상황 텍스트
+            situationText = this.add.text(400, 300, '', { font: '24px Arial', fill: '#ffffff' }).setOrigin(0.5);
 
             // 타임 텍스트
-            timeText = this.add.text(10, 90, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
-
-            // 첫 번째 상황 생성
-            generateNextSituation.call(this);
+            timeText = this.add.text(10, 50, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
 
             // 입력 필드에서 Enter 입력 처리
             inputField.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     const playerInput = inputField.value;
+                    addToLog(playerInput);
                     checkInput(playerInput, currentSituation);
                     inputField.value = ''; // 입력 필드 초기화
                 }
@@ -88,17 +184,19 @@
         }
 
         function update(time, delta) {
-            // 게임 타이머 업데이트
-            currentTime += delta / 1000;
+            if (gameStarted && !gamePaused) {
+                // 게임 타이머 업데이트
+                currentTime += delta / 1000;
 
-            const minutes = Math.floor(currentTime / 60);
-            const seconds = Math.floor(currentTime % 60);
+                const minutes = Math.floor(currentTime / 60);
+                const seconds = Math.floor(currentTime % 60);
 
-            timeText.setText(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+                timeText.setText(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+            }
         }
 
         function generateSituation() {
-            const champions = ['Ahri', 'Lee Sin', 'Lux', 'Yasuo'];
+            const champions = ['다리우스', '리신', '아리', '이즈리얼', '룰루'];
             const spells = ['Flash', 'Teleport'];
             const spellCooldowns = { Flash: 300, Teleport: 360 }; // 초 단위
 
@@ -117,8 +215,8 @@
         function displaySituation(situation) {
             currentSituation = situation;
 
-            // 상황 출력
-            promptText.setText(`${situation.champion} used ${situation.spell} at ${situation.timestamp}`);
+            // 중앙 상황 출력
+            situationText.setText(`${situation.champion}가 ${situation.spell}을(를) 사용했습니다. 시간: ${situation.timestamp}`);
 
             // 입력 필드에 타임스탬프 남기기
             inputField.value = situation.timestamp;
@@ -164,7 +262,7 @@
         }
 
         function showMessage(message, color) {
-            const messageText = this.add.text(400, 300, message, {
+            const messageText = this.add.text(400, 250, message, {
                 font: '30px Arial',
                 fill: color
             }).setOrigin(0.5);
@@ -174,6 +272,13 @@
                 callback: () => messageText.destroy(),
                 callbackScope: this
             });
+        }
+
+        function addToLog(message) {
+            const newLogEntry = document.createElement('div');
+            newLogEntry.textContent = message;
+            logContainer.appendChild(newLogEntry);
+            logContainer.scrollTop = logContainer.scrollHeight; // 스크롤을 항상 아래로 유지
         }
     </script>
 </body>
