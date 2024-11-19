@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOL Spell Check Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: auto;
+        }
+
+        #inputField {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            width: 300px;
+            height: 30px;
+            font-size: 18px;
+            text-align: center;
+            z-index: 10;
+            display: none;
+        }
+
+        #logContainer {
+            position: absolute;
+            bottom: 60px;
+            left: 10px;
+            width: 300px;
+            max-height: 200px;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            font-size: 14px;
+            z-index: 10;
+            display: none;
+        }
+
+        #startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 20;
+        }
+
+        .controlButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            margin-left: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 20;
+        }
+
+        #generateSituationButton {
+            top: 50px;
+        }
+
+        #resetButton {
+            top: 90px;
+        }
+
+        #pauseButton, #resumeButton {
+            top: 130px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <button id="startButton" onclick="startGame()">게임 시작하기</button>
+        <button id="generateSituationButton" class="controlButton" style="display:none;" onclick="generateNextSituation()">상황 발생</button>
+        <button id="resetButton" class="controlButton" style="display:none;" onclick="resetGame()">초기화</button>
+        <button id="pauseButton" class="controlButton" style="display:none;" onclick="pauseGame()">일시 정지</button>
+        <button id="resumeButton" class="controlButton" style="display:none;" onclick="resumeGame()">다시 시작</button>
+        <input type="text" id="inputField" name="timestampInput">
+        <div id="logContainer"></div>
+    </div>
+    <script>
+        let gameStarted = false;
+        let gamePaused = false;
+        let gameTime = 0;
+        let gameTimerInterval;
+        let situationInterval;
+
+        const inputField = document.getElementById('inputField');
+        const logContainer = document.getElementById('logContainer');
+        const startButton = document.getElementById('startButton');
+        const generateSituationButton = document.getElementById('generateSituationButton');
+        const resetButton = document.getElementById('resetButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const resumeButton = document.getElementById('resumeButton');
+
+        function startGame() {
+            startButton.style.display = 'none';
+            generateSituationButton.style.display = 'block';
+            resetButton.style.display = 'block';
+            pauseButton.style.display = 'block';
+            inputField.style.display = 'block';
+            logContainer.style.display = 'block';
+            gameStarted = true;
+            gamePaused = false;
+
+            inputField.value = '';
+            inputField.focus();
+
+            generateNextSituation();
+
+            gameTimerInterval = setInterval(() => {
+                if (gameStarted && !gamePaused) {
+                    gameTime++;
+                }
+            }, 1000);
+
+            situationInterval = setInterval(() => {
+                if (gameStarted && !gamePaused) {
+                    generateNextSituation();
+                }
+            }, 15000);
+        }
+
+        function resetGame() {
+            clearInterval(gameTimerInterval);
+            clearInterval(situationInterval);
+            gameTime = 0;
+            gameStarted = false;
+            gamePaused = false;
+
+            inputField.style.display = 'none';
+            logContainer.style.display = 'none';
+            resetButton.style.display = 'none';
+            pauseButton.style.display = 'none';
+            resumeButton.style.display = 'none';
+            generateSituationButton.style.display = 'none';
+            startButton.style.display = 'block';
+            logContainer.innerHTML = '';
+        }
+
+        function pauseGame() {
+            pauseButton.style.display = 'none';
+            resumeButton.style.display = 'block';
+            gamePaused = true;
+            clearInterval(gameTimerInterval);
+        }
+
+        function resumeGame() {
+            resumeButton.style.display = 'none';
+            pauseButton.style.display = 'block';
+            gamePaused = false;
+            gameTimerInterval = setInterval(() => {
+                if (gameStarted && !gamePaused) {
+                    gameTime++;
+                }
+            }, 1000);
+        }
+
+        function generateSituation() {
+            const champions = ['다리우스', '리신', '아리', '이즈리얼', '룰루'];
+            const spells = ['Flash', 'Teleport'];
+            const spellCooldowns = { Flash: 300, Teleport: 360 };
+
+            const champion = champions[Math.floor(Math.random() * champions.length)];
+            const spell = spells[Math.floor(Math.random() * spells.length)];
+            const currentTimestamp = getCurrentGameTime();
+
+            return {
+                champion: champion,
+                spell: spell,
+                cooldown: spellCooldowns[spell],
+                timestamp: currentTimestamp
+            };
+        }
+
+        function displaySituation(situation) {
+            const situationText = `${situation.timestamp} ${situation.champion}가 ${situation.spell}을(를) 사용했습니다.`;
+            const newLogEntry = document.createElement('div');
+            newLogEntry.textContent = situationText;
+            newLogEntry.style.color = 'blue';
+            logContainer.appendChild(newLogEntry);
+            
+            logContainer.scrollTop = logContainer.scrollHeight;
+
+            if (logContainer.childElementCount > 7) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+
+        function getCurrentGameTime() {
+            const minutes = Math.floor(gameTime / 60);
+            const seconds = gameTime % 60;
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+        
+        function generateNextSituation() {
+            const situation = generateSituation();
+            displaySituation(situation);
+        }
+
+        inputField.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                const playerInput = inputField.value;
+                if (playerInput.trim() !== '') {
+                    const newLogEntry = document.createElement('div');
+                    newLogEntry.textContent = playerInput;
+                    logContainer.appendChild(newLogEntry);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+
+                    if (logContainer.childElementCount > 7) {
+                        logContainer.removeChild(logContainer.firstChild);
+                    }
+                }
+                inputField.value = '';
+                inputField.focus();
+            }
+        });
+    </script>
+</body>
+</html>
