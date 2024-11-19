@@ -10,14 +10,37 @@
             margin: 0;
             overflow: hidden;
         }
+
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: auto;
+        }
+
+        input {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 30px;
+            font-size: 18px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
+    <div id="gameContainer"></div>
     <script>
         const config = {
             type: Phaser.AUTO,
             width: 800,
             height: 600,
+            parent: 'gameContainer',
+            dom: {
+                createContainer: true
+            },
             scene: {
                 preload: preload,
                 create: create,
@@ -47,7 +70,11 @@
             promptText = this.add.text(10, 50, '', { font: '20px Arial', fill: '#ffffff' });
 
             // 입력 필드 추가 (DOM 요소)
-            inputField = this.add.dom(400, 550, 'input', 'width: 200px; height: 30px; font-size: 18px; text-align: center;');
+            inputField = this.add.dom(400, 550, 'input', {
+                type: 'text',
+                name: 'timestampInput',
+                style: 'width: 200px; height: 30px; font-size: 18px; text-align: center;'
+            });
 
             // 타임 텍스트
             timeText = this.add.text(10, 90, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
@@ -59,9 +86,9 @@
             inputField.addListener('keydown');
             inputField.on('keydown', (event) => {
                 if (event.key === 'Enter') {
-                    const playerInput = inputField.getChildByName('').value;
+                    const playerInput = inputField.getChildByName('timestampInput').value;
                     checkInput(playerInput, currentSituation);
-                    inputField.getChildByName('').value = ''; // 입력 필드 초기화
+                    inputField.getChildByName('timestampInput').value = ''; // 입력 필드 초기화
                 }
             });
         }
@@ -100,7 +127,7 @@
             promptText.setText(`${situation.champion} used ${situation.spell} at ${situation.timestamp}`);
 
             // 입력 필드에 타임스탬프 남기기
-            const inputElement = inputField.getChildByName('');
+            const inputElement = inputField.getChildByName('timestampInput');
             inputElement.value = situation.timestamp;
         }
 
