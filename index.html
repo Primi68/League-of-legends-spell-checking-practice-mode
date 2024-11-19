@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LOL Spell Check Game</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
     <style>
         body {
             margin: 0;
@@ -27,7 +26,7 @@
             font-size: 18px;
             text-align: center;
             z-index: 10;
-            display: none; /* 게임 시작 전에는 숨김 */
+            display: none;
         }
 
         #logContainer {
@@ -42,7 +41,7 @@
             padding: 10px;
             font-size: 14px;
             z-index: 10;
-            display: none; /* 게임 시작 전에는 숨김 */
+            display: none;
         }
 
         #startButton {
@@ -66,147 +65,116 @@
             cursor: pointer;
             z-index: 20;
         }
+
+        #generateSituationButton {
+            top: 50px;
+        }
+
+        #resetButton {
+            top: 90px;
+        }
+
+        #pauseButton, #resumeButton {
+            top: 130px;
+        }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <button id="startButton">게임 시작하기</button>
+        <button id="startButton" onclick="startGame()">게임 시작하기</button>
+        <button id="generateSituationButton" class="controlButton" style="display:none;" onclick="generateNextSituation()">상황 발생</button>
+        <button id="resetButton" class="controlButton" style="display:none;" onclick="resetGame()">초기화</button>
+        <button id="pauseButton" class="controlButton" style="display:none;" onclick="pauseGame()">일시 정지</button>
+        <button id="resumeButton" class="controlButton" style="display:none;" onclick="resumeGame()">다시 시작</button>
         <input type="text" id="inputField" name="timestampInput">
         <div id="logContainer"></div>
-        <!-- 오른쪽 위에 위치한 조작 버튼들 -->
-        <button id="resetButton" class="controlButton" style="display:none;">초기화</button>
-        <button id="pauseButton" class="controlButton" style="display:none;">일시 정지</button>
-        <button id="resumeButton" class="controlButton" style="display:none;">다시 시작</button>
     </div>
     <script>
-        const config = {
-            type: Phaser.AUTO,
-            width: 800,
-            height: 600,
-            parent: 'gameContainer',
-            scene: {
-                preload: preload,
-                create: create,
-                update: update
-            }
-        };
-
-        const game = new Phaser.Game(config);
-
-        let currentTime = 0;
         let gameStarted = false;
         let gamePaused = false;
-        let currentSituation = null;
-        let promptText, timeText, situationText;
+        let gameTime = 0;
+        let gameTimerInterval;
+        let situationInterval;
+
         const inputField = document.getElementById('inputField');
         const logContainer = document.getElementById('logContainer');
         const startButton = document.getElementById('startButton');
+        const generateSituationButton = document.getElementById('generateSituationButton');
         const resetButton = document.getElementById('resetButton');
         const pauseButton = document.getElementById('pauseButton');
         const resumeButton = document.getElementById('resumeButton');
 
-        startButton.addEventListener('click', startGame);
-        resetButton.addEventListener('click', resetGame);
-        pauseButton.addEventListener('click', pauseGame);
-        resumeButton.addEventListener('click', resumeGame);
-
         function startGame() {
-            setInterval(() => {
-                if (gameStarted && !gamePaused) {
-                    generateNextSituation();
-                }
-            }, Math.floor(Math.random() * 3000) + 7000);
             startButton.style.display = 'none';
-            inputField.style.display = 'block';
-            logContainer.style.display = 'block';
+            generateSituationButton.style.display = 'block';
             resetButton.style.display = 'block';
             pauseButton.style.display = 'block';
+            inputField.style.display = 'block';
+            logContainer.style.display = 'block';
             gameStarted = true;
             gamePaused = false;
 
-            // 입력 필드 초기화 및 자동 포커스
             inputField.value = '';
             inputField.focus();
 
             generateNextSituation();
+
+            gameTimerInterval = setInterval(() => {
+                if (gameStarted && !gamePaused) {
+                    gameTime++;
+                }
+            }, 1000);
+
+            situationInterval = setInterval(() => {
+                if (gameStarted && !gamePaused) {
+                    generateNextSituation();
+                }
+            }, 15000);
         }
 
         function resetGame() {
-            // 게임 상태 초기화
+            clearInterval(gameTimerInterval);
+            clearInterval(situationInterval);
+            gameTime = 0;
             gameStarted = false;
             gamePaused = false;
-            currentTime = 0;
-            timeText.setText('Time: 0:00');
-            situationText.setText('');
-            logContainer.innerHTML = '';
 
-            // 버튼들 초기화
             inputField.style.display = 'none';
             logContainer.style.display = 'none';
             resetButton.style.display = 'none';
             pauseButton.style.display = 'none';
             resumeButton.style.display = 'none';
+            generateSituationButton.style.display = 'none';
             startButton.style.display = 'block';
+            logContainer.innerHTML = '';
         }
 
         function pauseGame() {
-            gamePaused = true;
             pauseButton.style.display = 'none';
             resumeButton.style.display = 'block';
+            gamePaused = true;
+            clearInterval(gameTimerInterval);
         }
 
         function resumeGame() {
-            gamePaused = false;
-            pauseButton.style.display = 'block';
             resumeButton.style.display = 'none';
-        }
-
-        function preload() {
-            // 필요한 이미지나 리소스 로드 가능
-        }
-
-        function create() {
-            // 배경 색상 설정
-            this.cameras.main.setBackgroundColor('#282c34');
-
-            // 중앙 상황 텍스트
-            situationText = this.add.text(400, 300, '', { font: '24px Arial', fill: '#ffffff' }).setOrigin(0.5);
-
-            // 타임 텍스트
-            timeText = this.add.text(10, 10, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
-
-            // 입력 필드에서 Enter 입력 처리
-            inputField.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    const playerInput = inputField.value;
-                    if (playerInput.trim() !== '') { // 입력이 비어 있지 않은 경우에만 기록 추가
-                        addToLog(playerInput);
-                    }
-                    inputField.value = ''; // 입력 필드 초기화
+            pauseButton.style.display = 'block';
+            gamePaused = false;
+            gameTimerInterval = setInterval(() => {
+                if (gameStarted && !gamePaused) {
+                    gameTime++;
                 }
-            });
-}
-
-        function update(time, delta) {
-            if (gameStarted && !gamePaused) {
-                // 게임 타이머 업데이트
-                currentTime += delta / 1000;
-
-                const minutes = Math.floor(currentTime / 60);
-                const seconds = Math.floor(currentTime % 60);
-
-                timeText.setText(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
-            }
+            }, 1000);
         }
 
         function generateSituation() {
             const champions = ['다리우스', '리신', '아리', '이즈리얼', '룰루'];
             const spells = ['Flash', 'Teleport'];
-            const spellCooldowns = { Flash: 300, Teleport: 360 }; // 초 단위
+            const spellCooldowns = { Flash: 300, Teleport: 360 };
 
-            const champion = Phaser.Utils.Array.GetRandom(champions);
-            const spell = Phaser.Utils.Array.GetRandom(spells);
-            const currentTimestamp = getCurrentTime();
+            const champion = champions[Math.floor(Math.random() * champions.length)];
+            const spell = spells[Math.floor(Math.random() * spells.length)];
+            const currentTimestamp = getCurrentGameTime();
 
             return {
                 champion: champion,
@@ -217,55 +185,47 @@
         }
 
         function displaySituation(situation) {
-            currentSituation = situation;
+            const situationText = `${situation.timestamp} ${situation.champion}가 ${situation.spell}을(를) 사용했습니다.`;
+            const newLogEntry = document.createElement('div');
+            newLogEntry.textContent = situationText;
+            newLogEntry.style.color = 'blue';
+            logContainer.appendChild(newLogEntry);
+            
+            logContainer.scrollTop = logContainer.scrollHeight;
 
-            // 중앙 상황 출력
-            situationText.setText(`${situation.champion}가 ${situation.spell}을(를) 사용했습니다. 시간: ${situation.timestamp}`);
-
-            // 입력 필드 초기화
-            inputField.value = '';
-        }
-
-        function generateNextSituation() {
-            const situation = generateSituation();
-            displaySituation.call(this, situation);
-        }
-
-        function checkInput(playerInput, situation) {
-            const correctTime = calculateCooldownTime(situation.timestamp, situation.cooldown);
-
-            // 새로운 상황 생성
-            generateNextSituation.call(this);
-        }
-
-        function calculateCooldownTime(currentTime, cooldown) {
-            const [minutes, seconds] = currentTime.split(':').map(Number);
-            let totalSeconds = minutes * 60 + seconds + cooldown;
-
-            const newMinutes = Math.floor(totalSeconds / 60);
-            const newSeconds = totalSeconds % 60;
-
-            return `${newMinutes}:${newSeconds < 10 ? '0' : ''}${newSeconds}`;
-        }
-
-        function getCurrentTime() {
-            const minutes = Math.floor(currentTime / 60);
-            const seconds = Math.floor(currentTime % 60);
-
-            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-        }
-
-        function addToLog(message) {
-            // 최대 로그 개수 유지 (7개로 제한)
-            if (logContainer.childElementCount >= 7) {
+            if (logContainer.childElementCount > 7) {
                 logContainer.removeChild(logContainer.firstChild);
             }
-
-            const newLogEntry = document.createElement('div');
-            newLogEntry.textContent = message;
-            logContainer.appendChild(newLogEntry);
-            logContainer.scrollTop = logContainer.scrollHeight; // 스크롤을 항상 아래로 유지
         }
+
+        function getCurrentGameTime() {
+            const minutes = Math.floor(gameTime / 60);
+            const seconds = gameTime % 60;
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+        
+        function generateNextSituation() {
+            const situation = generateSituation();
+            displaySituation(situation);
+        }
+
+        inputField.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                const playerInput = inputField.value;
+                if (playerInput.trim() !== '') {
+                    const newLogEntry = document.createElement('div');
+                    newLogEntry.textContent = playerInput;
+                    logContainer.appendChild(newLogEntry);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+
+                    if (logContainer.childElementCount > 7) {
+                        logContainer.removeChild(logContainer.firstChild);
+                    }
+                }
+                inputField.value = '';
+                inputField.focus();
+            }
+        });
     </script>
 </body>
 </html>
