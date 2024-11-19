@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LOL Spell Check Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+</head>
+<body>
+    <script>
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        const game = new Phaser.Game(config);
+
+        function preload() {
+            // Preload resources (images, audio, etc.)
+        }
+
+        function create() {
+            // Create game objects
+            this.add.text(400, 300, 'Hello LOL Spell Check Game!', {
+                font: '20px Arial',
+                fill: '#ffffff'
+            }).setOrigin(0.5);
+        }
+
+        function update() {
+            // Game logic goes here
+        }
+    </script>
+</body>
+</html>
