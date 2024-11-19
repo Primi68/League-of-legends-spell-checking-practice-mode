@@ -86,9 +86,12 @@
             inputField.addListener('keydown');
             inputField.on('keydown', (event) => {
                 if (event.key === 'Enter') {
-                    const playerInput = inputField.getChildByName('timestampInput').value;
-                    checkInput(playerInput, currentSituation);
-                    inputField.getChildByName('timestampInput').value = ''; // 입력 필드 초기화
+                    const inputElement = inputField.getChildByName('timestampInput');
+                    if (inputElement) { // 입력 필드가 존재하는지 확인
+                        const playerInput = inputElement.value;
+                        checkInput(playerInput, currentSituation);
+                        inputElement.value = ''; // 입력 필드 초기화
+                    }
                 }
             });
         }
@@ -126,9 +129,11 @@
             // 상황 출력
             promptText.setText(`${situation.champion} used ${situation.spell} at ${situation.timestamp}`);
 
-            // 입력 필드에 타임스탬프 남기기
+            // 입력 필드에 타임스탬프 남기기 (필드가 존재하는지 확인 후 값 설정)
             const inputElement = inputField.getChildByName('timestampInput');
-            inputElement.value = situation.timestamp;
+            if (inputElement) {
+                inputElement.value = situation.timestamp;
+            }
         }
 
         function generateNextSituation() {
