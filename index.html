@@ -29,35 +29,33 @@
 
         let score = 0;
         let currentTime = 0;
-        let waitTime = 5000; // 대기 시간 (5초)
         let currentSituation = null;
-
         let inputField, promptText, scoreText, timeText;
 
         function preload() {
-            // 이미지, 사운드 리소스 로드 (필요 시 추가 가능)
+            // 필요한 이미지나 리소스 로드 가능
         }
 
         function create() {
-            // 배경색 설정
+            // 배경 색상 설정
             this.cameras.main.setBackgroundColor('#282c34');
 
-            // 점수 텍스트
+            // 점수 표시
             scoreText = this.add.text(10, 10, 'Score: 0', { font: '20px Arial', fill: '#ffffff' });
 
             // 상황 텍스트
             promptText = this.add.text(10, 50, '', { font: '20px Arial', fill: '#ffffff' });
 
-            // 입력 필드 생성
-            inputField = this.add.dom(400, 550, 'input', 'width: 200px; height: 30px; font-size: 18px;');
+            // 입력 필드 추가 (DOM 요소)
+            inputField = this.add.dom(400, 550, 'input', 'width: 200px; height: 30px; font-size: 18px; text-align: center;');
 
             // 타임 텍스트
             timeText = this.add.text(10, 90, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
 
-            // 초기 상황 생성
+            // 첫 번째 상황 생성
             generateNextSituation.call(this);
 
-            // 입력 확인 이벤트
+            // 입력 필드에서 Enter 입력 처리
             inputField.addListener('keydown');
             inputField.on('keydown', (event) => {
                 if (event.key === 'Enter') {
@@ -81,7 +79,7 @@
         function generateSituation() {
             const champions = ['Ahri', 'Lee Sin', 'Lux', 'Yasuo'];
             const spells = ['Flash', 'Teleport'];
-            const spellCooldowns = { Flash: 300, Teleport: 360 };
+            const spellCooldowns = { Flash: 300, Teleport: 360 }; // 초 단위
 
             const champion = Phaser.Utils.Array.GetRandom(champions);
             const spell = Phaser.Utils.Array.GetRandom(spells);
@@ -101,12 +99,9 @@
             // 상황 출력
             promptText.setText(`${situation.champion} used ${situation.spell} at ${situation.timestamp}`);
 
-            // 대기 시간 후 다음 상황으로 이동
-            this.time.addEvent({
-                delay: waitTime,
-                callback: generateNextSituation,
-                callbackScope: this
-            });
+            // 입력 필드에 타임스탬프 남기기
+            const inputElement = inputField.getChildByName('');
+            inputElement.value = situation.timestamp;
         }
 
         function generateNextSituation() {
@@ -126,6 +121,9 @@
                 scoreText.setText(`Score: ${score}`);
                 showMessage('Incorrect!', 'red');
             }
+
+            // 새로운 상황 생성
+            generateNextSituation.call(this);
         }
 
         function calculateCooldownTime(currentTime, cooldown) {
