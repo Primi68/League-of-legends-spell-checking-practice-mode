@@ -18,7 +18,7 @@
             margin: auto;
         }
 
-        input {
+        #inputField {
             position: absolute;
             bottom: 20px;
             left: 50%;
@@ -27,20 +27,21 @@
             height: 30px;
             font-size: 18px;
             text-align: center;
+            z-index: 10; /* 게임 캔버스 위에 위치하도록 함 */
         }
     </style>
 </head>
 <body>
-    <div id="gameContainer"></div>
+    <div id="gameContainer">
+        <!-- HTML 입력 필드를 직접 작성하여 Phaser 캔버스 위에 배치 -->
+        <input type="text" id="inputField" name="timestampInput">
+    </div>
     <script>
         const config = {
             type: Phaser.AUTO,
             width: 800,
             height: 600,
             parent: 'gameContainer',
-            dom: {
-                createContainer: true
-            },
             scene: {
                 preload: preload,
                 create: create,
@@ -53,7 +54,8 @@
         let score = 0;
         let currentTime = 0;
         let currentSituation = null;
-        let inputField, promptText, scoreText, timeText;
+        let promptText, scoreText, timeText;
+        const inputField = document.getElementById('inputField');
 
         function preload() {
             // 필요한 이미지나 리소스 로드 가능
@@ -69,31 +71,18 @@
             // 상황 텍스트
             promptText = this.add.text(10, 50, '', { font: '20px Arial', fill: '#ffffff' });
 
-            // 입력 필드 추가 (DOM 요소)
-            inputField = this.add.dom(400, 550, 'input', {
-                type: 'text',
-                name: 'timestampInput',
-                style: 'width: 200px; height: 30px; font-size: 18px; text-align: center;'
-            });
-
             // 타임 텍스트
             timeText = this.add.text(10, 90, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
 
-            // 입력 필드가 생성된 후 일정 지연 시간 후 상황을 표시
-            this.time.delayedCall(100, () => {
-                generateNextSituation.call(this);
-            }, [], this);
+            // 첫 번째 상황 생성
+            generateNextSituation.call(this);
 
             // 입력 필드에서 Enter 입력 처리
-            inputField.addListener('keydown');
-            inputField.on('keydown', (event) => {
+            inputField.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
-                    const inputElement = inputField.getChildByName('timestampInput');
-                    if (inputElement) { // 입력 필드가 존재하는지 확인
-                        const playerInput = inputElement.value;
-                        checkInput(playerInput, currentSituation);
-                        inputElement.value = ''; // 입력 필드 초기화
-                    }
+                    const playerInput = inputField.value;
+                    checkInput(playerInput, currentSituation);
+                    inputField.value = ''; // 입력 필드 초기화
                 }
             });
         }
@@ -131,11 +120,8 @@
             // 상황 출력
             promptText.setText(`${situation.champion} used ${situation.spell} at ${situation.timestamp}`);
 
-            // 입력 필드에 타임스탬프 남기기 (필드가 존재하는지 확인 후 값 설정)
-            const inputElement = inputField.getChildByName('timestampInput');
-            if (inputElement) {
-                inputElement.value = situation.timestamp;
-            }
+            // 입력 필드에 타임스탬프 남기기
+            inputField.value = situation.timestamp;
         }
 
         function generateNextSituation() {
