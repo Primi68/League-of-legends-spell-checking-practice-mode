@@ -79,8 +79,10 @@
             // 타임 텍스트
             timeText = this.add.text(10, 90, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
 
-            // 첫 번째 상황 생성
-            generateNextSituation.call(this);
+            // 입력 필드가 생성된 후 일정 지연 시간 후 상황을 표시
+            this.time.delayedCall(100, () => {
+                generateNextSituation.call(this);
+            }, [], this);
 
             // 입력 필드에서 Enter 입력 처리
             inputField.addListener('keydown');
