@@ -1,8 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LOL Spell Check Game</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body>
     <script>
@@ -19,20 +27,135 @@
 
         const game = new Phaser.Game(config);
 
+        let score = 0;
+        let currentTime = 0;
+        let waitTime = 5000; // 대기 시간 (5초)
+        let currentSituation = null;
+
+        let inputField, promptText, scoreText, timeText;
+
         function preload() {
-            // Preload resources (images, audio, etc.)
+            // 이미지, 사운드 리소스 로드 (필요 시 추가 가능)
         }
 
         function create() {
-            // Create game objects
-            this.add.text(400, 300, 'Hello LOL Spell Check Game!', {
-                font: '20px Arial',
-                fill: '#ffffff'
-            }).setOrigin(0.5);
+            // 배경색 설정
+            this.cameras.main.setBackgroundColor('#282c34');
+
+            // 점수 텍스트
+            scoreText = this.add.text(10, 10, 'Score: 0', { font: '20px Arial', fill: '#ffffff' });
+
+            // 상황 텍스트
+            promptText = this.add.text(10, 50, '', { font: '20px Arial', fill: '#ffffff' });
+
+            // 입력 필드 생성
+            inputField = this.add.dom(400, 550, 'input', 'width: 200px; height: 30px; font-size: 18px;');
+
+            // 타임 텍스트
+            timeText = this.add.text(10, 90, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
+
+            // 초기 상황 생성
+            generateNextSituation.call(this);
+
+            // 입력 확인 이벤트
+            inputField.addListener('keydown');
+            inputField.on('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    const playerInput = inputField.getChildByName('').value;
+                    checkInput(playerInput, currentSituation);
+                    inputField.getChildByName('').value = ''; // 입력 필드 초기화
+                }
+            });
         }
 
-        function update() {
-            // Game logic goes here
+        function update(time, delta) {
+            // 게임 타이머 업데이트
+            currentTime += delta / 1000;
+
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = Math.floor(currentTime % 60);
+
+            timeText.setText(`Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+        }
+
+        function generateSituation() {
+            const champions = ['Ahri', 'Lee Sin', 'Lux', 'Yasuo'];
+            const spells = ['Flash', 'Teleport'];
+            const spellCooldowns = { Flash: 300, Teleport: 360 };
+
+            const champion = Phaser.Utils.Array.GetRandom(champions);
+            const spell = Phaser.Utils.Array.GetRandom(spells);
+            const currentTimestamp = getCurrentTime();
+
+            return {
+                champion: champion,
+                spell: spell,
+                cooldown: spellCooldowns[spell],
+                timestamp: currentTimestamp
+            };
+        }
+
+        function displaySituation(situation) {
+            currentSituation = situation;
+
+            // 상황 출력
+            promptText.setText(`${situation.champion} used ${situation.spell} at ${situation.timestamp}`);
+
+            // 대기 시간 후 다음 상황으로 이동
+            this.time.addEvent({
+                delay: waitTime,
+                callback: generateNextSituation,
+                callbackScope: this
+            });
+        }
+
+        function generateNextSituation() {
+            const situation = generateSituation();
+            displaySituation.call(this, situation);
+        }
+
+        function checkInput(playerInput, situation) {
+            const correctTime = calculateCooldownTime(situation.timestamp, situation.cooldown);
+
+            if (playerInput === correctTime) {
+                score += 100;
+                scoreText.setText(`Score: ${score}`);
+                showMessage('Correct!', 'green');
+            } else {
+                score -= 50;
+                scoreText.setText(`Score: ${score}`);
+                showMessage('Incorrect!', 'red');
+            }
+        }
+
+        function calculateCooldownTime(currentTime, cooldown) {
+            const [minutes, seconds] = currentTime.split(':').map(Number);
+            let totalSeconds = minutes * 60 + seconds + cooldown;
+
+            const newMinutes = Math.floor(totalSeconds / 60);
+            const newSeconds = totalSeconds % 60;
+
+            return `${newMinutes}:${newSeconds < 10 ? '0' : ''}${newSeconds}`;
+        }
+
+        function getCurrentTime() {
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = Math.floor(currentTime % 60);
+
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function showMessage(message, color) {
+            const messageText = this.add.text(400, 300, message, {
+                font: '30px Arial',
+                fill: color
+            }).setOrigin(0.5);
+
+            this.time.addEvent({
+                delay: 1000, // 1초 후 메시지 제거
+                callback: () => messageText.destroy(),
+                callbackScope: this
+            });
         }
     </script>
 </body>
