@@ -20,24 +20,25 @@
 
         #inputField {
             position: absolute;
-            bottom: 20px;
+            bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
-            width: 200px;
+            width: 400px;
             height: 30px;
             font-size: 18px;
             text-align: center;
-            z-index: 10; /* 게임 캔버스 위에 위치하도록 함 */
+            z-index: 10;
             display: none; /* 게임 시작 전에는 숨김 */
         }
 
         #logContainer {
             position: absolute;
-            bottom: 100px;
-            left: 10px;
-            width: 250px;
-            max-height: 300px;
-            overflow-y: auto;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            max-height: 60px;
+            overflow: hidden;
             background-color: rgba(0, 0, 0, 0.5);
             color: white;
             padding: 10px;
@@ -94,12 +95,11 @@
 
         const game = new Phaser.Game(config);
 
-        let score = 0;
         let currentTime = 0;
         let gameStarted = false;
         let gamePaused = false;
         let currentSituation = null;
-        let promptText, scoreText, timeText, situationText;
+        let promptText, timeText, situationText;
         const inputField = document.getElementById('inputField');
         const logContainer = document.getElementById('logContainer');
         const startButton = document.getElementById('startButton');
@@ -133,8 +133,6 @@
             gameStarted = false;
             gamePaused = false;
             currentTime = 0;
-            score = 0;
-            scoreText.setText('Score: 0');
             timeText.setText('Time: 0:00');
             situationText.setText('');
             logContainer.innerHTML = '';
@@ -168,20 +166,19 @@
             // 배경 색상 설정
             this.cameras.main.setBackgroundColor('#282c34');
 
-            // 점수 표시
-            scoreText = this.add.text(10, 10, 'Score: 0', { font: '20px Arial', fill: '#ffffff' });
-
             // 중앙 상황 텍스트
             situationText = this.add.text(400, 300, '', { font: '24px Arial', fill: '#ffffff' }).setOrigin(0.5);
 
             // 타임 텍스트
-            timeText = this.add.text(10, 50, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
+            timeText = this.add.text(10, 10, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
 
             // 입력 필드에서 Enter 입력 처리
             inputField.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     const playerInput = inputField.value;
-                    addToLog(playerInput);
+                    if (playerInput.trim() !== '') { // 입력이 비어 있지 않은 경우에만 기록 추가
+                        addToLog(playerInput);
+                    }
                     checkInput(playerInput, currentSituation);
                     inputField.value = ''; // 입력 필드 초기화
                 }
@@ -223,7 +220,7 @@
             // 중앙 상황 출력
             situationText.setText(`${situation.champion}가 ${situation.spell}을(를) 사용했습니다. 시간: ${situation.timestamp}`);
 
-            // 입력 필드에 타임스탬프 남기기 (초기에는 비워둠)
+            // 입력 필드 초기화
             inputField.value = '';
         }
 
@@ -234,16 +231,6 @@
 
         function checkInput(playerInput, situation) {
             const correctTime = calculateCooldownTime(situation.timestamp, situation.cooldown);
-
-            if (playerInput === correctTime) {
-                score += 100;
-                scoreText.setText(`Score: ${score}`);
-                showMessage('Correct!', 'green');
-            } else {
-                score -= 50;
-                scoreText.setText(`Score: ${score}`);
-                showMessage('Incorrect!', 'red');
-            }
 
             // 새로운 상황 생성
             generateNextSituation.call(this);
@@ -266,20 +253,12 @@
             return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
         }
 
-        function showMessage(message, color) {
-            const messageText = this.add.text(400, 250, message, {
-                font: '30px Arial',
-                fill: color
-            }).setOrigin(0.5);
-
-            this.time.addEvent({
-                delay: 1000, // 1초 후 메시지 제거
-                callback: () => messageText.destroy(),
-                callbackScope: this
-            });
-        }
-
         function addToLog(message) {
+            // 최대 로그 개수 유지 (7개로 제한)
+            if (logContainer.childElementCount >= 7) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+
             const newLogEntry = document.createElement('div');
             newLogEntry.textContent = message;
             logContainer.appendChild(newLogEntry);
