@@ -120,6 +120,11 @@
             pauseButton.style.display = 'block';
             gameStarted = true;
             gamePaused = false;
+
+            // 입력 필드 초기화 및 자동 포커스
+            inputField.value = '';
+            inputField.focus();
+
             generateNextSituation();
         }
 
@@ -218,8 +223,8 @@
             // 중앙 상황 출력
             situationText.setText(`${situation.champion}가 ${situation.spell}을(를) 사용했습니다. 시간: ${situation.timestamp}`);
 
-            // 입력 필드에 타임스탬프 남기기
-            inputField.value = situation.timestamp;
+            // 입력 필드에 타임스탬프 남기기 (초기에는 비워둠)
+            inputField.value = '';
         }
 
         function generateNextSituation() {
