@@ -176,8 +176,16 @@
             timeText = this.add.text(10, 10, 'Time: 0:00', { font: '20px Arial', fill: '#ffffff' });
 
             // 입력 필드에서 Enter 입력 처리
-            
-        }
+            inputField.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    const playerInput = inputField.value;
+                    if (playerInput.trim() !== '') { // 입력이 비어 있지 않은 경우에만 기록 추가
+                        addToLog(playerInput);
+                    }
+                    inputField.value = ''; // 입력 필드 초기화
+                }
+            });
+}
 
         function update(time, delta) {
             if (gameStarted && !gamePaused) {
